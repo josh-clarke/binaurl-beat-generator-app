@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#121212">
+    <meta name="description" content="Binaural beat generator for meditation, focus, and relaxation">
+    <title>Binaural Beats</title>
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/icons/icon-192x192.png">
+    <link rel="shortcut icon" href="images/icons/favicon.ico">
+    <!-- iOS specific -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Binaural Beats">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>Binaural Beats</h1>
+        </header>
+<main class="app-content">
+    <div class="app-controls">
+        <!-- Master Controls Panel -->
+        <div class="master-controls">
+            <div class="control-group">
+                <h2>Master Controls</h2>
+                <div class="control-row">
+                    <div class="control-item">
+                        <label for="master-volume" data-tooltip="Adjust the overall volume of all tracks">Volume</label>
+                        <div class="volume-control">
+                            <input type="range" id="master-volume" min="0" max="1" step="0.01" value="0.7">
+                            <div id="volume-display" class="volume-display" data-tooltip="Click and drag the slider to adjust volume">70%</div>
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <button id="play-button" class="primary-button" data-tooltip="Start or stop audio playback">
+                            <span class="button-icon">▶</span>
+                            <span class="button-text">Play</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="control-row">
+                    <div class="control-item">
+                        <label for="timer-duration" data-tooltip="Set a duration after which playback will automatically stop">Timer</label>
+                        <div class="timer-control">
+                            <select id="timer-duration" data-tooltip="Select a duration or set to infinite">
+                                <option value="0">∞ Infinite</option>
+                                <option value="5">5 minutes</option>
+                                <option value="10">10 minutes</option>
+                                <option value="15">15 minutes</option>
+                                <option value="20">20 minutes</option>
+                                <option value="30">30 minutes</option>
+                                <option value="45">45 minutes</option>
+                                <option value="60">60 minutes</option>
+                            </select>
+                            <div id="timer-display" class="timer-display" data-tooltip="Remaining time">--:--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="control-row">
+                    <div class="control-item">
+                        <button id="add-track-button" class="secondary-button" data-tooltip="Add a new audio track">
+                            <span class="button-icon">+</span>
+                            <span class="button-text">Add Track</span>
+                        </button>
+                    </div>
+                    <div class="control-item">
+                        <div class="preset-controls">
+                            <button id="save-preset-button" class="secondary-button" data-tooltip="Save current configuration as a preset">Save Preset</button>
+                            <button id="load-preset-button" class="secondary-button" data-tooltip="Load a saved preset">Load Preset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Track List Container -->
+        <div id="tracks-container" class="tracks-container">
+            <!-- Tracks will be added here dynamically -->
+        </div>
+    </div>
+
+    <!-- Add Track Modal -->
+    <div id="add-track-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Track</h3>
+                <button class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="track-type-selection">
+                    <button class="track-type-button" data-track-type="binaural">
+                        <div class="track-type-icon binaural-icon"></div>
+                        <div class="track-type-label">Binaural Beat</div>
+                    </button>
+                    <button class="track-type-button" data-track-type="isochronic">
+                        <div class="track-type-icon isochronic-icon"></div>
+                        <div class="track-type-label">Isochronic Beat</div>
+                    </button>
+                    <button class="track-type-button" data-track-type="noise">
+                        <div class="track-type-icon noise-icon"></div>
+                        <div class="track-type-label">Noise</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preset Modal -->
+    <div id="preset-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="preset-modal-title">Save Preset</h3>
+                <button class="close-button">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="preset-form" class="preset-form">
+                    <div class="form-group">
+                        <label for="preset-name">Preset Name</label>
+                        <input type="text" id="preset-name" placeholder="My Preset">
+                    </div>
+                    <div class="form-actions">
+                        <button id="preset-action-button" class="primary-button">Save</button>
+                        <button class="secondary-button preset-cancel-button">Cancel</button>
+                    </div>
+                </div>
+                <div id="preset-list" class="preset-list">
+                    <!-- Presets will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+        <footer class="app-footer">
+            <p>&copy; 2025 Binaural Beats App</p>
+            <p>A PWA for meditation, focus, and relaxation</p>
+            <button id="help-button" class="help-button">Help / About</button>
+        </footer>
+
+        <!-- Help/About Modal -->
+        <div id="help-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Help & About</h3>
+                    <button class="close-button">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <h4>Welcome to Binaural Beats</h4>
+                    <p>This application generates binaural beats, isochronic beats, and noise for meditation, focus, and relaxation.</p>
+                    
+                    <h4>Getting Started</h4>
+                    <ol>
+                        <li>Click <strong>Add Track</strong> to create a new audio track</li>
+                        <li>Choose from <strong>Binaural Beat</strong>, <strong>Isochronic Beat</strong>, or <strong>Noise</strong></li>
+                        <li>Adjust the frequency and volume settings as desired</li>
+                        <li>Click <strong>Play</strong> to start the audio</li>
+                        <li>Use the <strong>Timer</strong> to automatically stop playback after a set duration</li>
+                    </ol>
+                    
+                    <h4>Track Types</h4>
+                    <ul>
+                        <li><strong>Binaural Beat</strong>: Different frequencies in each ear create a perceived beat</li>
+                        <li><strong>Isochronic Beat</strong>: Pulsing single frequency for a rhythmic effect</li>
+                        <li><strong>Noise</strong>: White, pink, or brown noise for masking background sounds</li>
+                    </ul>
+                    
+                    <h4>Tips</h4>
+                    <ul>
+                        <li>Use headphones for the best binaural beat experience</li>
+                        <li>Save your favorite configurations as presets</li>
+                        <li>You can directly edit frequency values by clicking on them</li>
+                        <li>This app works offline - add it to your home screen for easy access</li>
+                    </ul>
+                    
+                    <h4>About</h4>
+                    <p>Version 1.0.0</p>
+                    <p>A Progressive Web Application (PWA) that works across devices and browsers.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+    <script>
+        // Register service worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        // ServiceWorker registration successful
+                    })
+                    .catch(error => {
+                        // ServiceWorker registration failed
+                    });
+            });
+        }
+    </script>
+</body>
+</html>

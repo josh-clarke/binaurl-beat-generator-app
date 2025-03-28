@@ -1,0 +1,41 @@
+# Dependencies
+/node_modules
+/npm-debug.log
+/yarn-error.log
+/yarn-debug.log
+/package-lock.json
+/yarn.lock
+
+# Build directories
+/dist
+/build
+/out
+/.next
+
+# IDE specific files
+/.idea
+/.vscode
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+.cache/
+/coverage
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
