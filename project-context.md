@@ -119,3 +119,9 @@ All planned tasks for the initial version have been completed. The application i
 - Version-controlled and available on GitHub
 - Properly licensed under MIT
 - Ready for public use or further enhancement
+
+### Upcoming Features
+The following enhancements are planned for future releases:
+- Audio Export Functionality (WAV/MP3)
+- Adjustable Fade Timing controls
+- See the feature-plan.md file for detailed implementation plans
