@@ -12,6 +12,9 @@ export default class Track {
    * @param {Object} options - Configuration options for the track
    * @param {string} options.id - Unique identifier for the track
    * @param {number} options.volume - Initial volume (0-1)
+   * @param {number} options.fadeInDuration - Fade-in duration in seconds (default: 2)
+   * @param {number} options.fadeOutDuration - Fade-out duration in seconds (default: 1)
+   * @param {string} options.type - Track type (set by subclasses)
    */
   constructor(audioContext, options = {}) {
     if (!audioContext) {
@@ -22,17 +25,22 @@ export default class Track {
     this.id = options.id || `track-${Date.now()}`;
     this.isPlaying = false;
     
+    // Track type (will be set by subclasses)
+    this.type = options.type || 'base';
+    
     // Create the track's gain node for volume control
     this.gainNode = this.audioContext.createGain();
-    this.gainNode.gain.value = typeof options.volume === 'number' ? 
+    this.gainNode.gain.value = typeof options.volume === 'number' ?
       Math.max(0, Math.min(1, options.volume)) : 0.7;
     
     // Connect the gain node to the destination (output)
     this.gainNode.connect(this.audioContext.destination);
     
-    // Fade durations in seconds
-    this.fadeInDuration = 5;
-    this.fadeOutDuration = 2;
+    // Fade durations in seconds (with defaults)
+    this.fadeInDuration = typeof options.fadeInDuration === 'number' && options.fadeInDuration >= 0 ?
+      options.fadeInDuration : 2;
+    this.fadeOutDuration = typeof options.fadeOutDuration === 'number' && options.fadeOutDuration >= 0 ?
+      options.fadeOutDuration : 1;
   }
   
   /**
@@ -122,13 +130,64 @@ export default class Track {
   }
   
   /**
+   * Get the current fade-in duration
+   * @return {number} Current fade-in duration in seconds
+   */
+  getFadeInDuration() {
+    return this.fadeInDuration;
+  }
+  
+  /**
+   * Set the fade-in duration
+   * @param {number} duration - Fade-in duration in seconds (must be >= 0)
+   * @return {number} The actual duration set
+   */
+  setFadeInDuration(duration) {
+    if (typeof duration === 'number' && duration >= 0) {
+      this.fadeInDuration = duration;
+    }
+    return this.fadeInDuration;
+  }
+  
+  /**
+   * Get the current fade-out duration
+   * @return {number} Current fade-out duration in seconds
+   */
+  getFadeOutDuration() {
+    return this.fadeOutDuration;
+  }
+  
+  /**
+   * Set the fade-out duration
+   * @param {number} duration - Fade-out duration in seconds (must be >= 0)
+   * @return {number} The actual duration set
+   */
+  setFadeOutDuration(duration) {
+    if (typeof duration === 'number' && duration >= 0) {
+      this.fadeOutDuration = duration;
+    }
+    return this.fadeOutDuration;
+  }
+
+  /**
    * Update track parameters
    * This method should be overridden by subclasses
    * @param {Object} params - Parameters to update
+   * @param {number} params.volume - New volume level (0-1)
+   * @param {number} params.fadeInDuration - New fade-in duration in seconds
+   * @param {number} params.fadeOutDuration - New fade-out duration in seconds
    */
   update(params = {}) {
     if (typeof params.volume === 'number') {
       this.setVolume(params.volume);
+    }
+    
+    if (typeof params.fadeInDuration === 'number') {
+      this.setFadeInDuration(params.fadeInDuration);
+    }
+    
+    if (typeof params.fadeOutDuration === 'number') {
+      this.setFadeOutDuration(params.fadeOutDuration);
     }
   }
   

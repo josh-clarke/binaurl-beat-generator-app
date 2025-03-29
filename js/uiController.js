@@ -29,6 +29,10 @@ export default class UIController {
     this.timerEndTime = null;
     this.timerInterval = null;
     
+    // Fade settings
+    this.fadeInDuration = this.loadFadeInDurationFromStorage() || 2;
+    this.fadeOutDuration = this.loadFadeOutDurationFromStorage() || 1;
+    
     // Initialize UI
     this.initUI();
   }
@@ -43,6 +47,15 @@ export default class UIController {
     // Apply volume to audio controller if available
     if (this.audioController) {
       this.audioController.setMasterVolume(this.masterVolume);
+    }
+    
+    // Initialize fade settings
+    this.updateFadeSettingsUI();
+    
+    // Apply fade settings to audio controller if available
+    if (this.audioController) {
+      this.audioController.setFadeInDuration(this.fadeInDuration);
+      this.audioController.setFadeOutDuration(this.fadeOutDuration);
     }
     
     // Update play button state
@@ -340,6 +353,24 @@ export default class UIController {
         this.updateTimerDisplay();
       }
       
+      // Update fade settings
+      if (typeof preset.configuration.fadeInDuration === 'number') {
+        this.fadeInDuration = preset.configuration.fadeInDuration;
+      } else {
+        // Backward compatibility: use default
+        this.fadeInDuration = 2;
+      }
+      
+      if (typeof preset.configuration.fadeOutDuration === 'number') {
+        this.fadeOutDuration = preset.configuration.fadeOutDuration;
+      } else {
+        // Backward compatibility: use default
+        this.fadeOutDuration = 1;
+      }
+      
+      // Update fade settings UI
+      this.updateFadeSettingsUI();
+      
       // Restart playback if it was playing
       if (wasPlaying) {
         this.startPlayback();
@@ -375,6 +406,11 @@ export default class UIController {
     this.masterVolume = this.audioController.getMasterVolume();
     this.updateVolumeUI(this.masterVolume);
     
+    // Update fade settings
+    this.fadeInDuration = this.audioController.getFadeInDuration();
+    this.fadeOutDuration = this.audioController.getFadeOutDuration();
+    this.updateFadeSettingsUI();
+    
     // Update timer
     const remainingTime = this.audioController.getRemainingTime();
     if (remainingTime > 0) {
@@ -382,6 +418,190 @@ export default class UIController {
       this.timerEndTime = new Date(Date.now() + remainingTime);
       this.updateTimerDisplay();
     }
+  }
+  
+  /**
+   * Set fade-in duration
+   * @param {number} duration - Fade-in duration in seconds
+   * @return {number} The actual duration set
+   */
+  setFadeInDuration(duration) {
+    if (!this.audioController) return duration;
+    
+    // Validate input
+    if (typeof duration !== 'number' || isNaN(duration) || duration < 0) {
+      return this.fadeInDuration;
+    }
+    
+    // Set fade-in duration in audio controller
+    const actualDuration = this.audioController.setFadeInDuration(duration);
+    
+    // Update UI state
+    this.fadeInDuration = actualDuration;
+    this.updateFadeSettingsUI();
+    
+    // Save to local storage
+    this.saveFadeInDurationToStorage(actualDuration);
+    
+    // Show feedback
+    this.showFadeSettingsFeedback();
+    
+    return actualDuration;
+  }
+  
+  /**
+   * Set fade-out duration
+   * @param {number} duration - Fade-out duration in seconds
+   * @return {number} The actual duration set
+   */
+  setFadeOutDuration(duration) {
+    if (!this.audioController) return duration;
+    
+    // Validate input
+    if (typeof duration !== 'number' || isNaN(duration) || duration < 0) {
+      return this.fadeOutDuration;
+    }
+    
+    // Set fade-out duration in audio controller
+    const actualDuration = this.audioController.setFadeOutDuration(duration);
+    
+    // Update UI state
+    this.fadeOutDuration = actualDuration;
+    this.updateFadeSettingsUI();
+    
+    // Save to local storage
+    this.saveFadeOutDurationToStorage(actualDuration);
+    
+    // Show feedback
+    this.showFadeSettingsFeedback();
+    
+    return actualDuration;
+  }
+  
+  /**
+   * Reset fade settings to defaults
+   */
+  resetFadeSettings() {
+    if (!this.audioController) return;
+    
+    // Default values
+    const defaultFadeIn = 2;
+    const defaultFadeOut = 1;
+    
+    // Set in audio controller
+    this.audioController.setFadeInDuration(defaultFadeIn);
+    this.audioController.setFadeOutDuration(defaultFadeOut);
+    
+    // Update UI state
+    this.fadeInDuration = defaultFadeIn;
+    this.fadeOutDuration = defaultFadeOut;
+    this.updateFadeSettingsUI();
+    
+    // Save to local storage
+    this.saveFadeInDurationToStorage(defaultFadeIn);
+    this.saveFadeOutDurationToStorage(defaultFadeOut);
+    
+    // Show feedback
+    this.showFadeSettingsFeedback();
+  }
+  
+  /**
+   * Update fade settings UI elements
+   */
+  updateFadeSettingsUI() {
+    // Update fade-in input if it exists
+    if (this.dom.fadeInDurationInput) {
+      this.dom.fadeInDurationInput.value = this.fadeInDuration;
+    }
+    
+    // Update fade-out input if it exists
+    if (this.dom.fadeOutDurationInput) {
+      this.dom.fadeOutDurationInput.value = this.fadeOutDuration;
+    }
+  }
+  
+  /**
+   * Show temporary feedback when fade settings are changed
+   */
+  showFadeSettingsFeedback() {
+    // Find or create feedback element
+    let feedbackElement = document.querySelector('.fade-settings-feedback');
+    
+    if (!feedbackElement) {
+      feedbackElement = document.createElement('div');
+      feedbackElement.className = 'fade-settings-feedback';
+      feedbackElement.textContent = 'Settings updated';
+      
+      // Find fade settings control to append feedback
+      const fadeSettingsControl = document.querySelector('.fade-settings-control');
+      if (fadeSettingsControl) {
+        fadeSettingsControl.appendChild(feedbackElement);
+      }
+    }
+    
+    // Show feedback
+    feedbackElement.classList.add('visible');
+    
+    // Hide after delay
+    setTimeout(() => {
+      feedbackElement.classList.remove('visible');
+    }, 1500);
+  }
+  
+  /**
+   * Save fade-in duration to local storage
+   * @param {number} duration - Fade-in duration in seconds
+   */
+  saveFadeInDurationToStorage(duration) {
+    try {
+      localStorage.setItem('binauralBeats_fadeInDuration', duration.toString());
+    } catch (error) {
+      console.error('Failed to save fade-in duration to local storage:', error);
+    }
+  }
+  
+  /**
+   * Load fade-in duration from local storage
+   * @return {number|null} Fade-in duration or null if not found
+   */
+  loadFadeInDurationFromStorage() {
+    try {
+      const storedDuration = localStorage.getItem('binauralBeats_fadeInDuration');
+      if (storedDuration !== null) {
+        return parseFloat(storedDuration);
+      }
+    } catch (error) {
+      console.error('Failed to load fade-in duration from local storage:', error);
+    }
+    return null;
+  }
+  
+  /**
+   * Save fade-out duration to local storage
+   * @param {number} duration - Fade-out duration in seconds
+   */
+  saveFadeOutDurationToStorage(duration) {
+    try {
+      localStorage.setItem('binauralBeats_fadeOutDuration', duration.toString());
+    } catch (error) {
+      console.error('Failed to save fade-out duration to local storage:', error);
+    }
+  }
+  
+  /**
+   * Load fade-out duration from local storage
+   * @return {number|null} Fade-out duration or null if not found
+   */
+  loadFadeOutDurationFromStorage() {
+    try {
+      const storedDuration = localStorage.getItem('binauralBeats_fadeOutDuration');
+      if (storedDuration !== null) {
+        return parseFloat(storedDuration);
+      }
+    } catch (error) {
+      console.error('Failed to load fade-out duration from local storage:', error);
+    }
+    return null;
   }
 
   /**

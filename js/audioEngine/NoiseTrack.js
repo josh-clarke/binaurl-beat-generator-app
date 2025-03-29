@@ -18,6 +18,9 @@ export default class NoiseTrack extends Track {
    * @param {number} options.volume - Initial volume (0-1)
    */
   constructor(audioContext, options = {}) {
+    // Set track type for offline rendering
+    options.type = 'noise';
+    
     super(audioContext, options);
     
     // Set default noise type if not provided

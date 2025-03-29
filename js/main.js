@@ -25,6 +25,9 @@ const DOM = {
   volumeDisplay: null,
   timerDurationSelect: null,
   timerDisplay: null,
+  fadeInDurationInput: null,
+  fadeOutDurationInput: null,
+  resetFadeSettingsButton: null,
   addTrackButton: null,
   savePresetButton: null,
   loadPresetButton: null,
@@ -32,7 +35,15 @@ const DOM = {
   addTrackModal: null,
   presetModal: null,
   presetForm: null,
-  presetList: null
+  presetList: null,
+  exportButton: null,
+  exportModal: null,
+  exportDuration: null,
+  exportFormat: null,
+  startExportButton: null,
+  exportProgressBar: null,
+  exportProgressText: null,
+  exportProgressContainer: null
 };
 
 // Initialize the application
@@ -89,6 +100,9 @@ function cacheDOM() {
   DOM.volumeDisplay = document.getElementById('volume-display');
   DOM.timerDurationSelect = document.getElementById('timer-duration');
   DOM.timerDisplay = document.getElementById('timer-display');
+  DOM.fadeInDurationInput = document.getElementById('fade-in-duration');
+  DOM.fadeOutDurationInput = document.getElementById('fade-out-duration');
+  DOM.resetFadeSettingsButton = document.getElementById('reset-fade-settings');
   DOM.addTrackButton = document.getElementById('add-track-button');
   DOM.savePresetButton = document.getElementById('save-preset-button');
   DOM.loadPresetButton = document.getElementById('load-preset-button');
@@ -97,6 +111,16 @@ function cacheDOM() {
   DOM.presetModal = document.getElementById('preset-modal');
   DOM.presetForm = document.getElementById('preset-form');
   DOM.presetList = document.getElementById('preset-list');
+  
+  // Export elements
+  DOM.exportButton = document.getElementById('export-button');
+  DOM.exportModal = document.getElementById('export-modal');
+  DOM.exportDuration = document.getElementById('export-duration');
+  DOM.exportFormat = document.getElementById('export-format');
+  DOM.startExportButton = document.getElementById('start-export-button');
+  DOM.exportProgressBar = document.getElementById('export-progress-bar');
+  DOM.exportProgressText = document.getElementById('export-progress-text');
+  DOM.exportProgressContainer = document.getElementById('export-progress-container');
 }
 
 // Check if Web Audio API is supported
@@ -173,6 +197,67 @@ function setupEventListeners() {
     });
   }
   
+  // Fade settings event listeners
+  if (DOM.fadeInDurationInput) {
+    DOM.fadeInDurationInput.addEventListener('input', (e) => {
+      if (APP_STATE.uiController) {
+        const duration = parseFloat(e.target.value);
+        APP_STATE.uiController.setFadeInDuration(duration);
+      }
+    });
+    
+    // Validate input on blur
+    DOM.fadeInDurationInput.addEventListener('blur', (e) => {
+      if (APP_STATE.uiController) {
+        const input = e.target;
+        const value = parseFloat(input.value);
+        
+        if (isNaN(value) || value < 0) {
+          // Invalid input, reset to default
+          input.classList.add('error');
+          setTimeout(() => {
+            input.classList.remove('error');
+            input.value = APP_STATE.audioController.getFadeInDuration();
+          }, 1000);
+        }
+      }
+    });
+  }
+  
+  if (DOM.fadeOutDurationInput) {
+    DOM.fadeOutDurationInput.addEventListener('input', (e) => {
+      if (APP_STATE.uiController) {
+        const duration = parseFloat(e.target.value);
+        APP_STATE.uiController.setFadeOutDuration(duration);
+      }
+    });
+    
+    // Validate input on blur
+    DOM.fadeOutDurationInput.addEventListener('blur', (e) => {
+      if (APP_STATE.uiController) {
+        const input = e.target;
+        const value = parseFloat(input.value);
+        
+        if (isNaN(value) || value < 0) {
+          // Invalid input, reset to default
+          input.classList.add('error');
+          setTimeout(() => {
+            input.classList.remove('error');
+            input.value = APP_STATE.audioController.getFadeOutDuration();
+          }, 1000);
+        }
+      }
+    });
+  }
+  
+  if (DOM.resetFadeSettingsButton) {
+    DOM.resetFadeSettingsButton.addEventListener('click', () => {
+      if (APP_STATE.uiController) {
+        APP_STATE.uiController.resetFadeSettings();
+      }
+    });
+  }
+  
   if (DOM.addTrackButton) {
     DOM.addTrackButton.addEventListener('click', () => {
       if (APP_STATE.uiController) {
@@ -187,6 +272,32 @@ function setupEventListeners() {
   
   if (DOM.loadPresetButton) {
     DOM.loadPresetButton.addEventListener('click', () => showPresetModal('load'));
+  }
+  
+  // Export button
+  if (DOM.exportButton) {
+    DOM.exportButton.addEventListener('click', showExportModal);
+  }
+  
+  // Export modal
+  if (DOM.exportModal) {
+    // Close button
+    const closeButtons = DOM.exportModal.querySelectorAll('.close-button, .export-cancel-button');
+    closeButtons.forEach(button => {
+      button.addEventListener('click', hideExportModal);
+    });
+    
+    // Start export button
+    if (DOM.startExportButton) {
+      DOM.startExportButton.addEventListener('click', startExport);
+    }
+    
+    // Close when clicking outside
+    DOM.exportModal.addEventListener('click', (e) => {
+      if (e.target === DOM.exportModal) {
+        hideExportModal();
+      }
+    });
   }
   
   // Add track modal
@@ -1214,5 +1325,269 @@ function handleVolumeValueClick(event) {
   
   // Handle blur event (clicking outside)
   input.addEventListener('blur', handleInputChange);
+}
+
+/**
+ * Show the export modal
+ */
+function showExportModal() {
+  if (!DOM.exportModal) return;
+  
+  // Reset progress
+  if (DOM.exportProgressBar) {
+    DOM.exportProgressBar.style.width = '0%';
+  }
+  
+  if (DOM.exportProgressText) {
+    DOM.exportProgressText.textContent = '0%';
+  }
+  
+  if (DOM.exportProgressContainer) {
+    DOM.exportProgressContainer.style.display = 'none';
+  }
+  
+  // Check if fast export is supported
+  const isFastExportSupported =
+    typeof AudioExporter !== 'undefined' &&
+    typeof AudioExporter.isFastExportSupported === 'function' &&
+    AudioExporter.isFastExportSupported();
+  
+  // Update UI to show fast export status
+  const exportInfoElement = document.getElementById('export-info');
+  if (exportInfoElement) {
+    if (isFastExportSupported) {
+      exportInfoElement.textContent = 'Using fast offline rendering for export';
+      exportInfoElement.classList.add('fast-export');
+    } else {
+      exportInfoElement.textContent = 'Using real-time recording for export';
+      exportInfoElement.classList.remove('fast-export');
+    }
+  }
+  
+  // Set up format change handler
+  const formatSelect = document.getElementById('export-format');
+  const bitrateOptions = document.getElementById('mp3-options');
+  
+  if (formatSelect && bitrateOptions) {
+    // Initial update
+    bitrateOptions.style.display = formatSelect.value === 'mp3' ? 'block' : 'none';
+    
+    // Add change handler if not already added
+    if (!formatSelect.hasAttribute('data-handler-attached')) {
+      formatSelect.addEventListener('change', function() {
+        bitrateOptions.style.display = this.value === 'mp3' ? 'block' : 'none';
+        updateEstimatedFileSize();
+      });
+      formatSelect.setAttribute('data-handler-attached', 'true');
+    }
+  }
+  
+  // Set up duration and bitrate change handlers for file size estimation
+  const durationInput = document.getElementById('export-duration');
+  const bitrateSelect = document.getElementById('export-bitrate');
+  
+  if (durationInput) {
+    if (!durationInput.hasAttribute('data-handler-attached')) {
+      durationInput.addEventListener('input', updateEstimatedFileSize);
+      durationInput.setAttribute('data-handler-attached', 'true');
+    }
+  }
+  
+  if (bitrateSelect) {
+    if (!bitrateSelect.hasAttribute('data-handler-attached')) {
+      bitrateSelect.addEventListener('change', updateEstimatedFileSize);
+      bitrateSelect.setAttribute('data-handler-attached', 'true');
+    }
+  }
+  
+  // Update estimated file size initially
+  updateEstimatedFileSize();
+  
+  // Show modal
+  DOM.exportModal.classList.add('active');
+}
+
+/**
+ * Update the estimated file size display
+ */
+function updateEstimatedFileSize() {
+  if (!APP_STATE.audioController) return;
+  
+  const durationInput = document.getElementById('export-duration');
+  const formatSelect = document.getElementById('export-format');
+  const bitrateSelect = document.getElementById('export-bitrate');
+  const sizeDisplay = document.getElementById('export-size-value');
+  
+  if (!durationInput || !formatSelect || !sizeDisplay) return;
+  
+  const duration = parseInt(durationInput.value, 10) || 60;
+  const format = formatSelect.value;
+  let bitRate = null;
+  
+  if (format === 'mp3' && bitrateSelect) {
+    bitRate = parseInt(bitrateSelect.value, 10);
+  }
+  
+  // Calculate estimated file size
+  const sizeInfo = APP_STATE.audioController.calculateEstimatedFileSize(duration, format, bitRate);
+  
+  if (sizeInfo && sizeDisplay) {
+    sizeDisplay.textContent = sizeInfo.formatted;
+  }
+}
+
+/**
+ * Hide the export modal
+ */
+function hideExportModal() {
+  if (!DOM.exportModal) return;
+  
+  // Hide modal
+  DOM.exportModal.classList.remove('active');
+}
+
+/**
+ * Start the export process
+ */
+function startExport() {
+  if (!APP_STATE.audioController || !DOM.exportDuration || !DOM.exportFormat) {
+    showError('Export failed: Audio controller not initialized');
+    return;
+  }
+  
+  // Get export options
+  const duration = parseInt(DOM.exportDuration.value, 10);
+  const format = DOM.exportFormat.value;
+  
+  // Get filename if provided
+  const filenameInput = document.getElementById('export-filename');
+  let filename = '';
+  if (filenameInput && filenameInput.value.trim()) {
+    filename = filenameInput.value.trim();
+  }
+  
+  // Get MP3 options if applicable
+  let mp3Options = null;
+  if (format === 'mp3') {
+    const bitrateSelect = document.getElementById('export-bitrate');
+    if (bitrateSelect) {
+      const bitRate = parseInt(bitrateSelect.value, 10);
+      mp3Options = {
+        bitRate: bitRate,
+        quality: bitRate >= 256 ? 'high' : (bitRate <= 128 ? 'low' : 'medium')
+      };
+    }
+  }
+  
+  // Validate duration
+  if (isNaN(duration) || duration <= 0 || duration > 3600) {
+    showError('Export failed: Invalid duration (must be between 1 and 3600 seconds)');
+    return;
+  }
+  
+  // Check if export is supported
+  if (!APP_STATE.audioController.isExportSupported()) {
+    showError('Export is not supported in this browser');
+    hideExportModal();
+    return;
+  }
+  
+  // Show progress container
+  if (DOM.exportProgressContainer) {
+    DOM.exportProgressContainer.style.display = 'block';
+  }
+  
+  // Disable start button during export
+  if (DOM.startExportButton) {
+    DOM.startExportButton.disabled = true;
+  }
+  
+  // Start export
+  APP_STATE.audioController.startExport({
+    duration: duration,
+    format: format,
+    filename: filename,
+    mp3Options: mp3Options,
+    onProgress: updateExportProgress,
+    onComplete: handleExportComplete,
+    onError: handleExportError
+  });
+}
+
+/**
+ * Update export progress
+ * @param {number} progress - Progress percentage (0-100)
+ */
+function updateExportProgress(progress) {
+  if (DOM.exportProgressBar) {
+    DOM.exportProgressBar.style.width = `${progress}%`;
+  }
+  
+  if (DOM.exportProgressText) {
+    DOM.exportProgressText.textContent = `${Math.round(progress)}%`;
+  }
+}
+
+/**
+ * Handle export completion
+ * @param {Blob} blob - The exported audio blob
+ */
+function handleExportComplete(blob) {
+  // Re-enable start button
+  if (DOM.startExportButton) {
+    DOM.startExportButton.disabled = false;
+  }
+  
+  // Create download link
+  const url = URL.createObjectURL(blob);
+  const filename = generateExportFilename(DOM.exportFormat.value);
+  
+  // Create and trigger download
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  
+  // Clean up
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
+  
+  // Show success message
+  showMessage(`Export complete: ${filename}`);
+  
+  // Hide modal
+  hideExportModal();
+}
+
+/**
+ * Handle export error
+ * @param {string} error - Error message
+ */
+function handleExportError(error) {
+  // Re-enable start button
+  if (DOM.startExportButton) {
+    DOM.startExportButton.disabled = false;
+  }
+  
+  // Show error message
+  showError(`Export failed: ${error}`);
+  
+  // Hide modal
+  hideExportModal();
+}
+
+/**
+ * Generate a filename for the exported audio
+ * @param {string} format - File format ('wav' or 'mp3')
+ * @return {string} Generated filename
+ */
+function generateExportFilename(format) {
+  const date = new Date();
+  const timestamp = date.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+  return `binaural_beat_${timestamp}.${format}`;
 }
   

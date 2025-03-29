@@ -301,6 +301,8 @@ export default class PresetManager {
     const configuration = {
       masterVolume: audioController.getMasterVolume(),
       timerDuration: audioController.getRemainingTime(),
+      fadeInDuration: audioController.getFadeInDuration(),
+      fadeOutDuration: audioController.getFadeOutDuration(),
       tracks: []
     };
     
@@ -366,6 +368,15 @@ export default class PresetManager {
     // Set master volume
     if (typeof configuration.masterVolume === 'number') {
       audioController.setMasterVolume(configuration.masterVolume);
+    }
+    
+    // Set fade durations (with backward compatibility)
+    if (typeof configuration.fadeInDuration === 'number') {
+      audioController.setFadeInDuration(configuration.fadeInDuration);
+    }
+    
+    if (typeof configuration.fadeOutDuration === 'number') {
+      audioController.setFadeOutDuration(configuration.fadeOutDuration);
     }
     
     // Create tracks from configuration

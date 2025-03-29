@@ -120,8 +120,25 @@ All planned tasks for the initial version have been completed. The application i
 - Properly licensed under MIT
 - Ready for public use or further enhancement
 
-### Upcoming Features
-The following enhancements are planned for future releases:
-- Audio Export Functionality (WAV/MP3)
-- Adjustable Fade Timing controls
-- See the feature-plan.md file for detailed implementation plans
+### Implemented Enhancements
+The following enhancements have been successfully implemented:
+
+1. **Adjustable Fade Timing**
+   - Customizable fade-in and fade-out durations
+   - Default values changed to 2s fade-in and 1s fade-out
+   - UI controls for adjusting fade settings
+   - Preset system updated to store fade parameters
+
+2. **Audio Export Functionality**
+   - Fast audio export using OfflineAudioContext (non-realtime rendering)
+   - Support for both WAV and MP3 formats
+   - Configurable export settings (duration, filename, etc.)
+   - Progress indicators and user feedback during export
+
+These enhancements significantly improve the user experience by allowing more control over the audio transitions and enabling the creation of high-quality audio files for offline use.
+
+### Future Considerations
+- Additional audio format support (FLAC, OGG)
+- Visualization options for audio output
+- More advanced preset management features
+- See the feature-plan.md file for more detailed implementation possibilities

@@ -18,6 +18,9 @@ export default class IsochronicTrack extends Track {
    * @param {number} options.volume - Initial volume (0-1)
    */
   constructor(audioContext, options = {}) {
+    // Set track type for offline rendering
+    options.type = 'isochronic';
+    
     super(audioContext, options);
     
     // Set default values if not provided

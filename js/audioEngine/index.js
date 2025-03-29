@@ -1,6 +1,6 @@
 /**
  * audioEngine/index.js - Main export file for the audio engine
- * 
+ *
  * This file exports all components of the audio engine for easy importing.
  */
 
@@ -9,6 +9,7 @@ import Track from './Track.js';
 import BinauralTrack from './BinauralTrack.js';
 import IsochronicTrack from './IsochronicTrack.js';
 import NoiseTrack from './NoiseTrack.js';
+import AudioExporter from '../audioExporter.js';
 
 // Export all components
 export {
@@ -16,7 +17,8 @@ export {
   Track,
   BinauralTrack,
   IsochronicTrack,
-  NoiseTrack
+  NoiseTrack,
+  AudioExporter
 };
 
 // Default export for convenience
